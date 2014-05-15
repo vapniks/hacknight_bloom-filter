@@ -21,11 +21,11 @@ main = do
                                 file <- readFile filename
                                 let salts = [1..(read numhashes::Int)]
                                     hashes = fmap (\x -> (\word size -> mod (DH.hashWithSalt x word) size)) salts
-                                    allwords = (words file)
+                                    allwords = S.fromList (words file)
                                     blankindex = (V.replicate (read indexsize::Int) False)
                                     index = addAllToIndex hashes blankindex allwords
                                     inhashes = fmap (queryIndex hashes index) queries
-                                    insets = fmap (flip S.member $ S.fromList allwords) queries
+                                    insets = fmap (flip S.member allwords) queries
                                 sequence $ zipWith3 printQueryResult insets inhashes queries
                                 putStrLn ""
                                 printStats $ foldl (\acc f -> f acc) (Stats 0 0 0 0)
@@ -33,12 +33,12 @@ main = do
            otherwise -> do hPutStrLn stderr "Usage: bloom-filter <filename> <index size> <number of hashes> [<query>..]"
                            exitWith $ ExitFailure 1
 
-addToIndex :: HashList -> BoolVec -> String -> BoolVec
-addToIndex hashes index word = let hashvals = (hashes <*> [word] <*> [(V.length index)])
-                               in index V.// zip hashvals (repeat True)
+addToIndex :: HashList -> String -> BoolVec -> BoolVec
+addToIndex hashes word index = let hashvals = (hashes <*> [word] <*> [(V.length index)])
+                                   in index V.// zip hashvals (repeat True)
 
-addAllToIndex :: HashList -> BoolVec -> [String] -> BoolVec
-addAllToIndex hashes index words = foldl (addToIndex hashes) index words
+addAllToIndex :: HashList -> BoolVec -> S.Set String -> BoolVec
+addAllToIndex hashes index words = S.fold (addToIndex hashes) index words
 
 queryIndex :: HashList -> BoolVec -> String -> Bool
 queryIndex hashes index query = let hashvals = (hashes <*> [query] <*> [(V.length index)])
