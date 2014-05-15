@@ -11,13 +11,7 @@ import qualified Data.Hashable as DH
 
 type BoolVec = V.Vector Bool
 type HashList = [String -> Int -> Int]
-data Stats = Stats { numTotal :: Int
-                   , numFalsePos :: Int
-                   , numFalseNeg :: Int
-                   , numTruePos :: Int 
-                   , numTrueNeg :: Int
-                   } deriving (Show)
-
+data Stats = Stats { numFalsePos :: Int, numFalseNeg :: Int, numTruePos :: Int , numTrueNeg :: Int} deriving (Show)
 
 main :: IO ()
 main = do 
@@ -34,10 +28,10 @@ main = do
                                     insets = fmap (flip S.member $ S.fromList allwords) queries
                                 sequence $ zipWith3 printQueryResult insets inhashes queries
                                 putStrLn ""
-                                printStats $ foldl (\acc f -> f acc) (Stats 0 0 0 0 0) (zipWith3 updateStats insets inhashes queries)
-           otherwise -> do
-                hPutStrLn stderr "Usage: bloom-filter <filename> <index size> <number of hashes> [<query>..]"
-                exitWith $ ExitFailure 1
+                                printStats $ foldl (\acc f -> f acc) (Stats 0 0 0 0)
+                                                                     (zipWith3 updateStats insets inhashes queries)
+           otherwise -> do hPutStrLn stderr "Usage: bloom-filter <filename> <index size> <number of hashes> [<query>..]"
+                           exitWith $ ExitFailure 1
 
 addToIndex :: HashList -> BoolVec -> String -> BoolVec
 addToIndex hashes index word = let addhash = (\ind hash -> ind V.// [(hash,True)])
@@ -59,18 +53,17 @@ printQueryResult inset inhash query = do case (inset,inhash) of
                                            (False,False) -> putStrLn $ "True negative: \"" ++ query ++ "\" is not there."
 
 updateStats :: Bool -> Bool -> String -> Stats -> Stats
-updateStats inset inhash query stats = let stats' = stats {numTotal = 1 + numTotal stats}
-                                       in case (inset,inhash) of
-                                           (True,True) -> stats' {numTruePos = 1 + numTruePos stats}
-                                           (True,False) -> stats' {numFalseNeg = 1 + numFalsePos stats}
-                                           (False,True) -> stats' {numFalsePos = 1 + numFalseNeg stats}
-                                           (False,False) -> stats' {numTrueNeg = 1 + numTrueNeg stats}
+updateStats inset inhash query stats = case (inset,inhash) of
+                                         (True,True) -> stats {numTruePos = 1 + numTruePos stats}
+                                         (True,False) -> stats {numFalseNeg = 1 + numFalsePos stats}
+                                         (False,True) -> stats {numFalsePos = 1 + numFalseNeg stats}
+                                         (False,False) -> stats {numTrueNeg = 1 + numTrueNeg stats}
 
 printStats :: Stats -> IO ()
-printStats (Stats t fp fn tp tn) = do putStrLn $ "Total number of queries = " ++ show t ++ " ("
-                                                                              ++ show tp ++ " hits, and "
-                                                                              ++ show tn ++ " misses)"
-                                      putStrLn $ "Error rate = " 
-                                                 ++ show (fromIntegral (fp+fn) / fromIntegral t) ++ " ("
-                                                 ++ show (fromIntegral (100 * fp) / fromIntegral t) ++ "% false positives, and "
-                                                 ++ show (fromIntegral (100 * fn) / fromIntegral t) ++ "% false negatives)"
+printStats (Stats fp fn tp tn) = do let t = fromIntegral (tp + tn)
+                                    putStrLn $ "Total number of queries = " ++ show t ++ " (" 
+                                                ++ show tp ++ " hits, and " ++ show tn ++ " misses)"
+                                    putStrLn $ "Error rate = " 
+                                               ++ show (fromIntegral (fp+fn) / t) ++ " ("
+                                               ++ show (fromIntegral (100 * fp) / t) ++ "% false positives, and "
+                                               ++ show (fromIntegral (100 * fn) / t) ++ "% false negatives)"
