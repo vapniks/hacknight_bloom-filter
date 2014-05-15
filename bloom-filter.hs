@@ -1,5 +1,5 @@
 -- Implementation of a bloom filter in haskell
--- Usage: bloom-filter <filename> <index size> <number of hashes> [<query>..]
+-- Usage: runhaskell bloom-filter.hs <filename> <index size> <number of hashes> [<query>..]
 
 import qualified Data.Set as S
 import qualified Data.Vector as V
