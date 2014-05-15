@@ -34,9 +34,8 @@ main = do
                            exitWith $ ExitFailure 1
 
 addToIndex :: HashList -> BoolVec -> String -> BoolVec
-addToIndex hashes index word = let addhash = (\ind hash -> ind V.// [(hash,True)])
-                                   hashvals = (hashes <*> [word] <*> [(V.length index)])
-                               in foldl addhash index hashvals
+addToIndex hashes index word = let hashvals = (hashes <*> [word] <*> [(V.length index)])
+                               in index V.// zip hashvals (repeat True)
 
 addAllToIndex :: HashList -> BoolVec -> [String] -> BoolVec
 addAllToIndex hashes index words = foldl (addToIndex hashes) index words
@@ -47,10 +46,10 @@ queryIndex hashes index query = let hashvals = (hashes <*> [query] <*> [(V.lengt
 
 printQueryResult :: Bool -> Bool -> String -> IO ()
 printQueryResult inset inhash query = do case (inset,inhash) of
-                                           (True,True) -> putStrLn $ "True positive: \"" ++ query ++ "\" is there."
-                                           (True,False) -> putStrLn $ "False negative: \"" ++ query ++ "\" is there."
-                                           (False,True) -> putStrLn $ "False positive: \"" ++ query ++ "\" is not there."
-                                           (False,False) -> putStrLn $ "True negative: \"" ++ query ++ "\" is not there."
+                                           (True,True) -> putStrLn $ "True positive: " ++ query
+                                           (True,False) -> putStrLn $ "False negative: " ++ query
+                                           (False,True) -> putStrLn $ "False positive: " ++ query
+                                           (False,False) -> putStrLn $ "True negative: " ++ query
 
 updateStats :: Bool -> Bool -> String -> Stats -> Stats
 updateStats inset inhash query stats = case (inset,inhash) of
