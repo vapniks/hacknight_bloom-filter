@@ -2,7 +2,7 @@
 -- Usage: runhaskell bloom-filter.hs <filename> <index size> <number of hashes> [<query>..]
 
 import qualified Data.Set as S
-import qualified Data.Vector as V
+import qualified Data.Vector.Unboxed as V
 import System.Environment
 import System.Exit
 import System.IO
@@ -33,6 +33,7 @@ main = do
            otherwise -> do hPutStrLn stderr "Usage: bloom-filter <filename> <index size> <number of hashes> [<query>..]"
                            exitWith $ ExitFailure 1
 
+-- This is the bottleneck (more specifically the V.// operation)
 addToIndex :: HashList -> String -> BoolVec -> BoolVec
 addToIndex hashes word index = let hashvals = (hashes <*> [word] <*> [(V.length index)])
                                    in index V.// zip hashvals (repeat True)
